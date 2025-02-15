@@ -3,7 +3,6 @@ package com.mar.solutions.security.dto;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.tomcat.util.codec.binary.StringUtils;
 
 import java.util.Set;
 

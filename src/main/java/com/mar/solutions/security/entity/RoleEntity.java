@@ -3,9 +3,6 @@ package com.mar.solutions.security.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-
 @Entity
 @Getter
 @Setter

@@ -28,13 +28,23 @@ public class AuthController {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserDTO> registerAdminUser(@RequestBody UserDTO userDTO) {
-        return ResponseEntity.ok(userService.createUser(userDTO));
+    @PostMapping("/createAdminUser")
+    public UserDTO createAdminUser(@RequestBody UserDTO userDTO) {
+        return userService.createAdminUser(userDTO);
+    }
+
+    @PostMapping("/createClientAdminUser")
+    public UserDTO createClientAdminUser(@RequestBody UserDTO userDTO) {
+        return userService.createAdminRoleUser(userDTO);
+    }
+
+    @PostMapping("/createNonAdminUser")
+    public UserDTO createNonAdminUser(@RequestBody UserDTO userDTO) {
+        return userService.createNonAdminUser(userDTO);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> loginAdminUser(@RequestBody AuthenticationRequest authenticationRequest) {
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest authenticationRequest) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
         final String token = jwtUtil.generateToken(userDetails);
