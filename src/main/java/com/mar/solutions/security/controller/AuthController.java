@@ -5,14 +5,18 @@ import com.mar.solutions.security.dto.AuthenticationResponse;
 import com.mar.solutions.security.dto.UserDTO;
 import com.mar.solutions.security.jwt.JwtUtil;
 import com.mar.solutions.security.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -51,8 +55,15 @@ public class AuthController {
         return ResponseEntity.ok(new AuthenticationResponse(token));
     }
 
-    @GetMapping("/verify")
-    public boolean verify() {
-        return true;
+    @GetMapping("/getTokenDetails")
+    public UserDetails getTokenDetails(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        if (Objects.nonNull(token)) {
+            String username = jwtUtil.extractUsernameFromToken(token.replace("Bearer ", ""));
+            if (Objects.nonNull(username)) {
+                return userDetailsService.loadUserByUsername(username);
+            }
+        }
+        return null;
     }
 }

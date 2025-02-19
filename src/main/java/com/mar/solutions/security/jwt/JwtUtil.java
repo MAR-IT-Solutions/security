@@ -55,7 +55,7 @@ public class JwtUtil {
             claims.put("email", user.get().getEmail());
             claims.put("name", user.get().getName());
             String clientCategory;
-            if (StringUtils.isEmpty(user.get().getClientCode())) {
+            if ("ADMIN".equalsIgnoreCase(user.get().getClientCode())) {
                 clientCategory = "ADMIN";
             } else {
                 clientCategory = "CLIENT";
