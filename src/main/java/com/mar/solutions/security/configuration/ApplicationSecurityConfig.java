@@ -4,6 +4,7 @@ import com.mar.solutions.security.filter.JwtAuthenticationFilter;
 import com.mar.solutions.security.filter.JwtAuthorizationFilter;
 import com.mar.solutions.security.jwt.JwtUtil;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,43 +13,74 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @AllArgsConstructor
 public class ApplicationSecurityConfig {
+
     private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
+    private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+
+    // Read allowed origins from environment variable or default to empty list
+    @Value("${CORS_ALLOWED_ORIGINS:}")
+    private String corsAllowedOriginsEnv;
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        List<String> allowedOrigins;
+        if (corsAllowedOriginsEnv.isEmpty()) {
+            allowedOrigins = List.of(); // or List.of("*") to allow all (not recommended)
+        } else {
+            allowedOrigins = Arrays.stream(corsAllowedOriginsEnv.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+        }
+        configuration.setAllowedOrigins(allowedOrigins);
+
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(authenticationManager(httpSecurity.getSharedObject(AuthenticationConfiguration.class)), jwtUtil);
-        httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        httpSecurity
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/createAdminUser").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/createAdminUser", "/api/auth/createClientAdminUser").permitAll()
                         .anyRequest()
                         .authenticated()
                 )
                 .addFilter(jwtAuthenticationFilter)
                 .addFilter(new JwtAuthorizationFilter(authenticationManager(httpSecurity.getSharedObject(AuthenticationConfiguration.class)), jwtUtil, userDetailsService));
+
         return httpSecurity.build();
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }
