@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -25,15 +26,23 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@AllArgsConstructor
 public class ApplicationSecurityConfig {
 
     private final JwtUtil jwtUtil;
-    private final org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
 
     // Read allowed origins from environment variable or default to empty list
     @Value("${CORS_ALLOWED_ORIGINS:}")
     private String corsAllowedOriginsEnv;
+
+    public ApplicationSecurityConfig(JwtUtil jwtUtil,
+                                     UserDetailsService userDetailsService,
+                                     @Value("${CORS_ALLOWED_ORIGINS:}") String corsAllowedOriginsEnv) {
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+        this.corsAllowedOriginsEnv = corsAllowedOriginsEnv;
+    }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
